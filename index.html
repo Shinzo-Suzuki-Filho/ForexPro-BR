@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ForexPro BR - Plataforma de Trading 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0a0a0a 0%,
+          #1a1a2e 50%,
+          #16213e 100%
+        );
+        color: white;
+        overflow-x: hidden;
+      }
+
+      .header {
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #333;
+        padding: 1rem 2rem;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        font-weight: bold;
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+      }
+
+      .main-container {
+        margin-top: 80px;
+        padding: 2rem;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .trading-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .chart-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      .chart-controls {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .control-btn {
+        padding: 0.3rem 0.8rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .control-btn:hover,
+      .control-btn.active {
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+      }
+
+      #chart3d {
+        width: 100%;
+        height: 400px;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .trading-panel {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      .currency-selector {
+        margin-bottom: 2rem;
+      }
+
+      .currency-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.3rem;
+        margin-bottom: 1rem;
+      }
+
+      .currency-tab {
+        flex: 1;
+        padding: 0.8rem;
+        text-align: center;
+        border: none;
+        background: transparent;
+        color: white;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .currency-tab.active {
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+      }
+
+      .price-display {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .current-price {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .price-change {
+        font-size: 1.1rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        display: inline-block;
+      }
+
+      .positive {
+        color: #00ff88;
+        background: rgba(0, 255, 136, 0.1);
+      }
+
+      .negative {
+        color: #ff4757;
+        background: rgba(255, 71, 87, 0.1);
+      }
+
+      .trading-form {
+        margin-bottom: 2rem;
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #ccc;
+        font-weight: 500;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        font-size: 1rem;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #00d4ff;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+      }
+
+      .trade-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .btn-buy {
+        background: linear-gradient(45deg, #00ff88, #00cc6a);
+        color: white;
+        padding: 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-sell {
+        background: linear-gradient(45deg, #ff4757, #c44569);
+        color: white;
+        padding: 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-buy:hover,
+      .btn-sell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      }
+
+      .auto-trading {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .auto-trading h3 {
+        margin-bottom: 1rem;
+        color: #00d4ff;
+      }
+
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin-right: 1rem;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
+
+      .market-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+
+      .market-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .market-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .market-card h3 {
+        color: #00d4ff;
+        margin-bottom: 1rem;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+      }
+
+      .status-online {
+        background: #00ff88;
+      }
+
+      .status-offline {
+        background: #ff4757;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .trading-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .header-content {
+          padding: 0 1rem;
+        }
+
+        .main-container {
+          padding: 1rem;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .currency-tabs {
+          flex-direction: column;
+          gap: 0.3rem;
+        }
+
+        .current-price {
+          font-size: 2rem;
+        }
+
+        .trade-buttons {
+          grid-template-columns: 1fr;
+        }
+
+        .nav-buttons {
+          display: none;
+        }
+      }
+
+      .loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #00d4ff;
+        font-size: 1.2rem;
+      }
+
+      .spinner {
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #00d4ff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">ForexPro BR</div>
+        <nav class="nav-buttons">
+          <a href="#" class="btn btn-secondary">Dashboard</a>
+          <a href="#" class="btn btn-secondary">Portfólio</a>
+          <a href="#" class="btn btn-secondary">Histórico</a>
+          <a href="#" class="btn btn-primary">Configurações</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-container">
+      <div class="trading-grid">
+        <div class="chart-container">
+          <div class="chart-header">
+            <h2 class="chart-title">Gráfico de Candlestick 3D</h2>
+            <div class="chart-controls">
+              <button class="control-btn active" data-timeframe="1m">1m</button>
+              <button class="control-btn" data-timeframe="5m">5m</button>
+              <button class="control-btn" data-timeframe="15m">15m</button>
+              <button class="control-btn" data-timeframe="1h">1h</button>
+              <button class="control-btn" data-timeframe="1d">1d</button>
+            </div>
+          </div>
+          <div id="chart3d">
+            <div class="loading-indicator">
+              <div class="spinner"></div>
+              Carregando gráfico 3D...
+            </div>
+          </div>
+        </div>
+
+        <div class="trading-panel">
+          <div class="currency-selector">
+            <div class="currency-tabs">
+              <button class="currency-tab active" data-currency="USD">
+                USD
+              </button>
+              <button class="currency-tab" data-currency="EUR">EUR</button>
+              <button class="currency-tab" data-currency="GBP">GBP</button>
+            </div>
+
+            <div class="price-display">
+              <div class="current-price" id="currentPrice">R$ 5.2847</div>
+              <div class="price-change positive" id="priceChange">
+                +0.0123 (+0.23%)
+              </div>
+            </div>
+          </div>
+
+          <form class="trading-form">
+            <div class="form-group">
+              <label class="form-label">Quantidade (BRL)</label>
+              <input
+                type="number"
+                class="form-input"
+                placeholder="1000.00"
+                step="0.01"
+                min="0"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Preço Limite</label>
+              <input
+                type="number"
+                class="form-input"
+                placeholder="5.2847"
+                step="0.0001"
+                min="0"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Stop Loss</label>
+              <input
+                type="number"
+                class="form-input"
+                placeholder="5.1000"
+                step="0.0001"
+                min="0"
+              />
+            </div>
+          </form>
+
+          <div class="trade-buttons">
+            <button class="btn-buy">COMPRAR</button>
+            <button class="btn-sell">VENDER</button>
+          </div>
+
+          <div class="auto-trading">
+            <h3>Trading Automatizado</h3>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoTradingToggle" />
+              <span class="slider"></span>
+            </label>
+            <span>Ativar Auto-Trading</span>
+            <div style="margin-top: 1rem; font-size: 0.9rem; color: #ccc">
+              <div>
+                <span class="status-indicator status-online"></span>Servidor
+                Online
+              </div>
+              <div>
+                <span class="status-indicator status-online"></span>API
+                Conectada
+              </div>
+              <div>
+                <span class="status-indicator status-online"></span>Dados em
+                Tempo Real
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="market-overview">
+        <div class="market-card">
+          <h3>Análise de Mercado</h3>
+          <p>
+            <strong>USD/BRL:</strong> Tendência de alta com suporte em R$ 5.20
+          </p>
+          <p><strong>Volatilidade:</strong> Média (2.1%)</p>
+          <p><strong>RSI:</strong> 67.3 (Neutro)</p>
+          <p><strong>Volume:</strong> R$ 2.8B (24h)</p>
+        </div>
+
+        <div class="market-card">
+          <h3>Posições Ativas</h3>
+          <p><strong>USD/BRL:</strong> +R$ 1,247.80</p>
+          <p><strong>EUR/BRL:</strong> -R$ 234.50</p>
+          <p><strong>GBP/BRL:</strong> +R$ 890.23</p>
+          <p>
+            <strong>Total P&L:</strong>
+            <span class="positive">+R$ 1,903.53</span>
+          </p>
+        </div>
+
+        <div class="market-card">
+          <h3>Alertas de Mercado</h3>
+          <p>• USD/BRL rompeu resistência de R$ 5.28</p>
+          <p>• EUR/BRL próximo ao suporte de R$ 5.45</p>
+          <p>• GBP/BRL em canal lateral</p>
+          <p>• Volatilidade aumentando no mercado</p>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      class TradingPlatform {
+        constructor() {
+          this.scene = null;
+          this.camera = null;
+          this.renderer = null;
+          this.candlesticks = [];
+          this.currentCurrency = "USD";
+          this.autoTrading = false;
+          this.prices = {
+            USD: { price: 5.2847, change: 0.0123, percent: 0.23 },
+            EUR: { price: 5.4521, change: -0.0045, percent: -0.08 },
+            GBP: { price: 6.1234, change: 0.0287, percent: 0.47 },
+          };
+
+          this.init();
+          this.setupEventListeners();
+          this.startPriceUpdates();
+        }
+
+        init() {
+          this.initThreeJS();
+          this.createCandlestickChart();
+          this.animate();
+        }
+
+        initThreeJS() {
+          const container = document.getElementById("chart3d");
+          const rect = container.getBoundingClientRect();
+
+          this.scene = new THREE.Scene();
+          this.scene.background = new THREE.Color(0x0a0a0a);
+
+          this.camera = new THREE.PerspectiveCamera(
+            75,
+            rect.width / rect.height,
+            0.1,
+            1000
+          );
+          this.camera.position.set(0, 5, 15);
+          this.camera.lookAt(0, 0, 0);
+
+          this.renderer = new THREE.WebGLRenderer({ antialias: true });
+          this.renderer.setSize(rect.width, rect.height);
+          this.renderer.shadowMap.enabled = true;
+          this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+          container.innerHTML = "";
+          container.appendChild(this.renderer.domElement);
+
+          // OrbitControls para interação
+          this.controls = new THREE.OrbitControls(
+            this.camera,
+            this.renderer.domElement
+          );
+          this.controls.enableDamping = true;
+          this.controls.dampingFactor = 0.08;
+          this.controls.minDistance = 8;
+          this.controls.maxDistance = 40;
+
+          const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+          this.scene.add(ambientLight);
+
+          const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+          directionalLight.position.set(10, 10, 5);
+          directionalLight.castShadow = true;
+          this.scene.add(directionalLight);
+
+          const gridHelper = new THREE.GridHelper(20, 20, 0x333333, 0x333333);
+          this.scene.add(gridHelper);
+
+          window.addEventListener("resize", () => this.handleResize());
+        }
+
+        createCandlestickChart() {
+          // Generate sample candlestick data
+          const candleData = this.generateCandleData(50);
+
+          candleData.forEach((candle, index) => {
+            const candleGroup = new THREE.Group();
+
+            // Body
+            const bodyHeight = Math.abs(candle.close - candle.open);
+            const bodyGeometry = new THREE.BoxGeometry(0.6, bodyHeight, 0.6);
+            const bodyMaterial = new THREE.MeshLambertMaterial({
+              color: candle.close > candle.open ? 0x00ff88 : 0xff4757,
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = (candle.close + candle.open) / 2;
+            body.castShadow = true;
+            candleGroup.add(body);
+
+            // Wick
+            const wickHeight = candle.high - candle.low;
+            const wickGeometry = new THREE.BoxGeometry(0.1, wickHeight, 0.1);
+            const wickMaterial = new THREE.MeshLambertMaterial({
+              color: 0xffffff,
+            });
+            const wick = new THREE.Mesh(wickGeometry, wickMaterial);
+            wick.position.y = (candle.high + candle.low) / 2;
+            candleGroup.add(wick);
+
+            // Position
+            candleGroup.position.x = (index - 25) * 0.8;
+            candleGroup.position.z = Math.sin(index * 0.1) * 2;
+
+            this.candlesticks.push(candleGroup);
+            this.scene.add(candleGroup);
+          });
+        }
+
+        generateCandleData(count) {
+          const data = [];
+          let price = 5.28;
+
+          for (let i = 0; i < count; i++) {
+            const open = price;
+            const change = (Math.random() - 0.5) * 0.1;
+            const close = open + change;
+            const high = Math.max(open, close) + Math.random() * 0.05;
+            const low = Math.min(open, close) - Math.random() * 0.05;
+
+            data.push({ open, high, low, close });
+            price = close;
+          }
+
+          return data;
+        }
+
+        animate() {
+          requestAnimationFrame(() => this.animate());
+
+          // Rotate camera around the chart
+          const time = Date.now() * 0.0005;
+          this.camera.position.x = Math.cos(time) * 15;
+          this.camera.position.z = Math.sin(time) * 15;
+          this.camera.lookAt(0, 0, 0);
+
+          // Animate candlesticks
+          this.candlesticks.forEach((candle, index) => {
+            candle.rotation.y = Math.sin(time + index * 0.1) * 0.1;
+          });
+
+          this.renderer.render(this.scene, this.camera);
+        }
+
+        handleResize() {
+          const container = document.getElementById("chart3d");
+          const rect = container.getBoundingClientRect();
+
+          this.camera.aspect = rect.width / rect.height;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(rect.width, rect.height);
+        }
+
+        setupEventListeners() {
+          // Currency tabs
+          document.querySelectorAll(".currency-tab").forEach((tab) => {
+            tab.addEventListener("click", (e) => {
+              document
+                .querySelectorAll(".currency-tab")
+                .forEach((t) => t.classList.remove("active"));
+              e.target.classList.add("active");
+              this.currentCurrency = e.target.dataset.currency;
+              this.updatePriceDisplay();
+            });
+          });
+
+          // Chart controls
+          document.querySelectorAll(".control-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              document
+                .querySelectorAll(".control-btn")
+                .forEach((b) => b.classList.remove("active"));
+              e.target.classList.add("active");
+              this.updateChart(e.target.dataset.timeframe);
+            });
+          });
+
+          // Auto trading toggle
+          document
+            .getElementById("autoTradingToggle")
+            .addEventListener("change", (e) => {
+              this.autoTrading = e.target.checked;
+              if (this.autoTrading) {
+                this.startAutoTrading();
+              } else {
+                this.stopAutoTrading();
+              }
+            });
+
+          // Trade buttons
+          document.querySelector(".btn-buy").addEventListener("click", () => {
+            this.executeTrade("buy");
+          });
+
+          document.querySelector(".btn-sell").addEventListener("click", () => {
+            this.executeTrade("sell");
+          });
+        }
+
+        updatePriceDisplay() {
+          const priceData = this.prices[this.currentCurrency];
+          const priceElement = document.getElementById("currentPrice");
+          const changeElement = document.getElementById("priceChange");
+
+          priceElement.textContent = `R$ ${priceData.price.toFixed(4)}`;
+
+          const changeText = `${
+            priceData.change >= 0 ? "+" : ""
+          }${priceData.change.toFixed(4)} (${
+            priceData.change >= 0 ? "+" : ""
+          }${priceData.percent.toFixed(2)}%)`;
+          changeElement.textContent = changeText;
+          changeElement.className = `price-change ${
+            priceData.change >= 0 ? "positive" : "negative"
+          }`;
+        }
+
+        startPriceUpdates() {
+          setInterval(() => {
+            Object.keys(this.prices).forEach((currency) => {
+              const change = (Math.random() - 0.5) * 0.01;
+              this.prices[currency].price += change;
+              this.prices[currency].change = change;
+              this.prices[currency].percent =
+                (change / this.prices[currency].price) * 100;
+            });
+
+            this.updatePriceDisplay();
+          }, 2000);
+        }
+
+        updateChart(timeframe) {
+          console.log(`Atualizando gráfico para: ${timeframe}`);
+          // Aqui seria implementada a lógica para atualizar o gráfico com diferentes timeframes
+        }
+
+        executeTrade(type) {
+          const amount = document.querySelector(".form-input").value;
+          const price = this.prices[this.currentCurrency].price;
+
+          if (!amount || amount <= 0) {
+            alert("Por favor, insira um valor válido para a operação.");
+            return;
+          }
+
+          const message = `${type.toUpperCase()} executado!\nMoeda: ${
+            this.currentCurrency
+          }/BRL\nValor: R$ ${amount}\nPreço: R$ ${price.toFixed(4)}`;
+          alert(message);
+
+          // Animação visual do trade
+          this.animateTradeExecution(type);
+        }
+
+        animateTradeExecution(type) {
+          // Criar efeito visual no gráfico 3D
+          const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+          const material = new THREE.MeshLambertMaterial({
+            color: type === "buy" ? 0x00ff88 : 0xff4757,
+            transparent: true,
+            opacity: 0.8,
+          });
+          const sphere = new THREE.Mesh(geometry, material);
+          sphere.position.set(
+            Math.random() * 10 - 5,
+            3,
+            Math.random() * 10 - 5
+          );
+
+          this.scene.add(sphere);
+
+          // Remover após animação
+          setTimeout(() => {
+            this.scene.remove(sphere);
+          }, 2000);
+        }
+
+        startAutoTrading() {
+          console.log("Auto-trading ativado");
+          this.autoTradingInterval = setInterval(() => {
+            const shouldTrade = Math.random() > 0.7; // 30% chance de executar trade
+            if (shouldTrade) {
+              const tradeType = Math.random() > 0.5 ? "buy" : "sell";
+              console.log(`Auto-trading executando: ${tradeType}`);
+              this.animateTradeExecution(tradeType);
+            }
+          }, 5000);
+        }
+
+        stopAutoTrading() {
+          console.log("Auto-trading desativado");
+          if (this.autoTradingInterval) {
+            clearInterval(this.autoTradingInterval);
+          }
+        }
+      }
+
+      // Initialize the trading platform when DOM is loaded
+      document.addEventListener("DOMContentLoaded", () => {
+        new TradingPlatform();
+      });
+    </script>
+  </body>
+</html>
